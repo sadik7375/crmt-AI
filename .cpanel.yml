@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/cannkuyv/caremateai.cannyapps.com
+    - /bin/cp -R * $DEPLOYPATH
