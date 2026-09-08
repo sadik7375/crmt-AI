@@ -262,14 +262,29 @@ class PrescriptionController extends Controller
         $user = $request->user();
 
         try {
-            // 1. Check if image file exists and save it
+            $fileData = null;
+            $mimeType = 'image/jpeg';
+
+            // 1. Check if image file exists or base64 image is provided
             if ($request->hasFile('image')) {
                 $path = '/storage/' . $request->file('image')->store('prescriptions', 'public');
-                
-                // 2. Prepare Base64 for Gemini multimodal API
                 $fileData = base64_encode($request->file('image')->getContent());
-                $mimeType = $request->file('image')->getMimeType();
+                $mimeType = $request->file('image')->getMimeType() ?: 'image/jpeg';
+            } elseif ($request->filled('image_base64') || $request->filled('image')) {
+                $rawBase64 = $request->input('image_base64') ?? $request->input('image');
+                if (preg_match('/^data:(image\/\w+);base64,/', $rawBase64, $typeMatch)) {
+                    $mimeType = $typeMatch[1];
+                    $rawBase64 = substr($rawBase64, strpos($rawBase64, ',') + 1);
+                }
+                $fileData = $rawBase64;
+                $decodedImg = base64_decode($rawBase64);
+                $ext = str_contains($mimeType, 'png') ? 'png' : 'jpg';
+                $filename = 'prescriptions/' . uniqid() . '.' . $ext;
+                \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $decodedImg);
+                $path = '/storage/' . $filename;
+            }
 
+            if ($fileData) {
                 // 3. Prompt for Gemini
                 $prompt = "Identify and extract all medical information from this prescription image. " .
                           "You MUST return the response strictly in JSON format. Do not write any explanations. " .
