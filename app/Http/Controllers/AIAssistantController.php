@@ -35,7 +35,19 @@ class AIAssistantController extends Controller
                 ], 403);
             }
             \Illuminate\Support\Facades\Cache::put($cacheKey, $count + 1, now()->addDays(30));
+        } elseif ($plan === 'basic' || $plan === 'pro') {
+            $monthKey = "ai_chat_count_user_{$user->id}_" . now()->format('Y_m');
+            $count = \Illuminate\Support\Facades\Cache::get($monthKey, 0);
+            if ($count >= 20) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Basic plan AI Assistant limit reached (20 messages per month). Please upgrade to Premium plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+            \Illuminate\Support\Facades\Cache::put($monthKey, $count + 1, now()->addDays(30));
         }
+        // Premium users have unlimited AI chat
         
         // 1. Format Appointments Context
         $appointments = Appointment::where('user_id', $user->id)

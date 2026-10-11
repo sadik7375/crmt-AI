@@ -47,7 +47,31 @@ class LabReportController extends Controller
             if ($existingCount >= 2) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Free plan limit reached (Max 2 lab report scans). Please upgrade to Premium plan.',
+                    'message' => 'Free plan limit reached (Max 2 lab report scans). Please upgrade your plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+        } elseif ($plan === 'basic' || $plan === 'pro') {
+            $monthlyCount = LabReport::where('user_id', $user->id)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+            if ($monthlyCount >= 10) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Basic plan limit reached (10 scans per month). Please upgrade to Premium plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+        } elseif ($plan === 'premium' || $plan === 'family') {
+            $monthlyCount = LabReport::where('user_id', $user->id)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+            if ($monthlyCount >= 20) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Premium monthly limit reached (20 scans per month).',
                     'redirect' => 'UpgradePlan',
                 ], 403);
             }
