@@ -21,6 +21,19 @@ class AppointmentController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        $plan = strtolower($user->plan_tier ?? 'free');
+        if ($plan === 'free') {
+            $existingCount = Appointment::where('user_id', $user->id)->count();
+            if ($existingCount >= 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Free appointment limit reached (Max 2 appointments). Please upgrade to Premium plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+        }
+
         $request->validate([
             'doctor_name' => 'required|string',
             'specialty'   => 'nullable|string',
@@ -47,6 +60,16 @@ class AppointmentController extends Controller
 
     public function parseVoice(Request $request)
     {
+        $user = $request->user();
+        $plan = strtolower($user->plan_tier ?? 'free');
+        if ($plan === 'free') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voice mode appointment booking is a Premium feature. Please upgrade your plan.',
+                'redirect' => 'UpgradePlan',
+            ], 403);
+        }
+
         $request->validate([
             'audio'     => 'required|string',
             'mime_type' => 'required|string',

@@ -78,6 +78,19 @@ class PrescriptionController extends Controller
      */
     public function scan(Request $request)
     {
+        $user = $request->user();
+        $plan = strtolower($user->plan_tier ?? 'free');
+        if ($plan === 'free') {
+            $existingCount = Prescription::where('user_id', $user->id)->count();
+            if ($existingCount >= 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Free plan limit reached (Max 2 prescription scans). Please upgrade to Premium plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+        }
+
         // Extend execution limit to 3 minutes for slow AI proxy calls
         set_time_limit(180);
 

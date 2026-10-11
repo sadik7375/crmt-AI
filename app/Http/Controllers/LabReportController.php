@@ -40,6 +40,19 @@ class LabReportController extends Controller
     // Scan & Process Report via AI / OCR (Returns extraction data without creating database record yet)
     public function scan(Request $request)
     {
+        $user = $request->user();
+        $plan = strtolower($user->plan_tier ?? 'free');
+        if ($plan === 'free') {
+            $existingCount = LabReport::where('user_id', $user->id)->count();
+            if ($existingCount >= 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Free plan limit reached (Max 2 lab report scans). Please upgrade to Premium plan.',
+                    'redirect' => 'UpgradePlan',
+                ], 403);
+            }
+        }
+
         $request->validate([
             'report_type' => 'required|string',
             'image'       => 'required|image|mimes:jpeg,png,jpg,webp,pdf|max:10240',
