@@ -54,6 +54,24 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function upgradePlan(Request $request)
+    {
+        $request->validate([
+            'plan' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        $targetPlan = ucfirst(strtolower($request->plan));
+        $user->plan_tier = $targetPlan;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully upgraded to ' . $targetPlan . ' plan!',
+            'user'    => $user,
+        ]);
+    }
+
     public function changePassword(Request $request)
     {
         $request->validate([
